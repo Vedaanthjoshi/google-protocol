@@ -99,23 +99,36 @@ if (token) {
     
     const goal = getMathematicalGoal(dayNum);
     
-    // Manage Memory
-    if (!chatMemory[chatId]) chatMemory[chatId] = [];
-    
-    // Fetch pushed tasks
+    // Manage Memory & Context from Firebase
     const docRef = db.collection('timetable').doc('userProgress');
     const doc = await docRef.get();
+    
+    let chatMemory = {};
     let pushedTasks = [];
-    if (doc.exists && doc.data().pushedTasks) pushedTasks = doc.data().pushedTasks;
+    let generatedSchedules = {};
+    
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.chatMemory) chatMemory = data.chatMemory;
+      if (data.pushedTasks) pushedTasks = data.pushedTasks;
+      if (data.generatedSchedules) generatedSchedules = data.generatedSchedules;
+    }
+    
+    if (!chatMemory[chatId]) chatMemory[chatId] = [];
+
+    const targetDayIdx = dayNum - 1;
+    let existingSchedule = generatedSchedules[targetDayIdx] ? JSON.stringify(generatedSchedules[targetDayIdx], null, 2) : "None generated yet.";
     
     const pushedText = pushedTasks.length > 0 ? `\nPENDING TASKS FROM YESTERDAY:\n${pushedTasks.map(t => `- ${t}`).join('\n')}\nYou MUST include these in today's schedule.` : '';
 
     // Format conversation history
     const historyText = chatMemory[chatId].map(m => `${m.role === 'user' ? 'YOU' : 'COACH'}: ${m.text}`).join('\n');
+    
+    const dateLabel = now.toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     const prompt = `[SYSTEM INSTRUCTION]
 You are a friendly, encouraging, and highly organized productivity assistant. Your goal is to help the user build an optimal daily schedule to reach their goals.
-Today is Day ${dayNum} of the 153-day Google Protocol.
+Today is ${dateLabel} (Day ${dayNum} of the 153-day Google Protocol).
 
 MATHEMATICAL GOALS FOR TODAY:
 - DSA: ${goal.dsaTopic} (${goal.dsaQ} questions)
@@ -123,12 +136,16 @@ MATHEMATICAL GOALS FOR TODAY:
 - Project Work: ${goal.projTopic}
 ${pushedText}
 
+CURRENT SCHEDULE FOR TODAY:
+${existingSchedule}
+
 YOUR DIRECTIVES:
 1. You are having an ongoing conversation with the user to figure out their constraints for today (e.g. start time, fixed events).
-2. If you DON'T have enough info to build a perfect schedule (like what time they are starting), chat with them! Be friendly and ask them gently when they plan to start and if they have any fixed plans.
-3. If they HAVE provided enough constraints, you MUST output a fully optimized daily schedule in a JSON array format ENCLOSED IN \`\`\`json AND \`\`\`.
-4. The JSON array MUST have blocks with: "dur" (e.g. "1.5h"), "label" (string), "cat" ("dsa"|"course"|"life"|"admin"|"break"), and "time" ("08:00").
-5. When outputting the JSON, you MUST also include a friendly, encouraging message alongside it.
+2. If the user ALREADY has a CURRENT SCHEDULE FOR TODAY and they are just saying "Hey" or chatting normally, DO NOT generate a new JSON. Just reply naturally acknowledging that their schedule is already locked in and ask how they are doing.
+3. If they DON'T have a schedule yet, ask them gently when they plan to start and if they have any fixed plans.
+4. ONLY if they provide constraints OR explicitly ask to change their existing schedule, you MUST output a fully optimized daily schedule in a JSON array format ENCLOSED IN \`\`\`json AND \`\`\`.
+5. The JSON array MUST have blocks with: "dur" (e.g. "1.5h"), "label" (string), "cat" ("dsa"|"course"|"life"|"admin"|"break"), and "time" ("08:00").
+6. When outputting the JSON, you MUST also include a friendly, encouraging message alongside it.
 
 [CHAT HISTORY]
 ${historyText}
@@ -143,10 +160,11 @@ COACH:`;
       
       let rawText = response.text.trim();
       
-      // Save memory
+      // Save memory to Firebase
       chatMemory[chatId].push({ role: 'user', text: msg.text });
       chatMemory[chatId].push({ role: 'model', text: rawText });
       if (chatMemory[chatId].length > 10) chatMemory[chatId].splice(0, 2); // Keep last 5 exchanges
+      await docRef.set({ chatMemory }, { merge: true });
 
       // Check if the AI generated a JSON schedule
       const jsonMatch = rawText.match(/```json\n([\s\S]*?)\n```/);
@@ -159,17 +177,7 @@ COACH:`;
         
         const generatedBlocks = JSON.parse(jsonStr);
 
-        // Save to Firebase
-        const docRef = db.collection('timetable').doc('userProgress');
-        const doc = await docRef.get();
-        let generatedSchedules = {};
-        if (doc.exists && doc.data().generatedSchedules) {
-          generatedSchedules = doc.data().generatedSchedules;
-        }
-        
-        const targetDayIdx = dayNum - 1;
         generatedSchedules[targetDayIdx] = generatedBlocks;
-
         await docRef.set({ generatedSchedules, pushedTasks: [] }, { merge: true });
         
         replyText += "\n\n✅ *Schedule Locked In. Open your React Dashboard.*";
