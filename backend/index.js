@@ -91,8 +91,8 @@ if (token) {
 
     const chatId = msg.chat.id;
     
-    // Determine the current day (We calculate days elapsed since June 26, 2026)
-    const startDate = new Date(2026, 5, 26);
+    // Determine the current day (We calculate days elapsed since July 5, 2026)
+    const startDate = new Date(2026, 6, 5);
     const now = new Date();
     let dayNum = Math.floor((now - startDate) / (1000 * 60 * 60 * 24)) + 1;
     if (dayNum < 1) dayNum = 1; // Fallback if tested before start date
@@ -235,7 +235,7 @@ cron.schedule('0 23 * * *', async () => {
     const checked = data.checked || {};
     const generatedSchedules = data.generatedSchedules || {};
 
-    const startDate = new Date(2026, 5, 26);
+    const startDate = new Date(2026, 6, 5);
     const now = new Date();
     let dayNum = Math.floor((now - startDate) / (1000 * 60 * 60 * 24)) + 1;
     if (dayNum < 1) dayNum = 1;

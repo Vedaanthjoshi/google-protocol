@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   CheckCircle2, Circle, BrainCircuit, Code2, 
-  Dumbbell, Coffee, ChevronRight, ChevronLeft, Target, ShieldCheck, Clock, Plus
+  Dumbbell, Coffee, ChevronRight, ChevronLeft, Target, ShieldCheck, Clock, Plus, Sun, Moon
 } from "lucide-react";
 
 // ─── QUOTES ────────────────────────────────────────────────────────────────────
@@ -64,8 +64,8 @@ function calculateEndTime(startTime, dur) {
 
 // ─── SCHEDULE ENGINE (DYNAMIC) ────────────────────────────────────────────────
 function buildDynamicSchedule(ignitionTimes = {}, customEvents = {}, generatedSchedules = {}) {
-  const start = new Date(2026, 5, 26); // June 26, 2026
-  const end = new Date(2026, 10, 26); // Nov 26, 2026
+  const start = new Date(2026, 6, 12); // July 12, 2026
+  const end = new Date(2026, 11, 5); // Dec 5, 2026
 
   const days = [];
   let dayNum = 1;
@@ -106,30 +106,38 @@ function buildDynamicSchedule(ignitionTimes = {}, customEvents = {}, generatedSc
     if (isRest) { 
       floatingBlocks = [
         { dur: "1h", label: "Weekly Check-in: Metrics & Plan", cat: "admin" },
-        { dur: "2h", label: "Buffer: Catch up missed topics", cat: "break" },
+        { dur: "45m", label: "Web Dev Course", cat: "course" },
+        { dur: "1h", label: `ML Course: ${aiTopic}`, cat: "course" },
+        { dur: "2h", label: "Buffer: Catch up missed topics", cat: "break", isBuffer: true },
         { dur: "4h", label: "Deep Rest & Recovery", cat: "life" },
       ];
     } else if (date.getDay() === 6) { 
       floatingBlocks = [
         { dur: "2h", label: "LeetCode Weekly Contest + Upsolving", cat: "dsa" },
-        { dur: "1h", label: "Break & Lunch", cat: "break" },
-        { dur: "3h", label: `Heavy Coding Block: ${projTopic}`, cat: "course" },
+        { dur: "30m", label: "Deep Rest (Non-Screen)", cat: "break" },
+        { dur: "45m", label: "Web Dev Course", cat: "course" },
+        { dur: "1h", label: `ML Course: ${aiTopic}`, cat: "course" },
+        { dur: "1h", label: "Lunch & Walk", cat: "break" },
+        { dur: "1.25h", label: `Heavy Coding Part 1: ${projTopic}`, cat: "course" },
+        { dur: "20m", label: "Mindful Break", cat: "break" },
+        { dur: "1.25h", label: `Heavy Coding Part 2: ${projTopic}`, cat: "course" },
         { dur: "1h", label: "Workout", cat: "life" },
-        { dur: "2h", label: "Free Time / Life", cat: "life" },
+        { dur: "2h", label: "Free Time / Life", cat: "life", isBuffer: true },
       ];
     } else { 
       floatingBlocks = [
         { dur: "15m",  label: "Active Recall: Yesterday's concept", cat: "dsa" },
         { dur: "1.5h", label: `DSA Deep Work: ${dsaTopic}`, cat: "dsa" },
+        { dur: "20m",  label: "Deep Rest (Non-Screen)", cat: "break" },
         { dur: "45m",  label: "Spaced Review: 2 problems cold", cat: "dsa" },
-        { dur: "30m",  label: "Break", cat: "break" },
-        { dur: "1.5h", label: `AI Learning: ${aiTopic}`, cat: "course" },
-        { dur: "1.5h", label: "Lunch & Rest", cat: "break" },
-        { dur: "1.5h", label: `Project Building: ${projTopic}`, cat: "course" },
+        { dur: "45m",  label: "Web Dev Course", cat: "course" },
+        { dur: "1h",   label: "Lunch & Walk", cat: "break" },
+        { dur: "1h",   label: `ML Course: ${aiTopic}`, cat: "course" },
+        { dur: "1h",   label: `Project Building: ${projTopic}`, cat: "course" },
         { dur: "1h",   label: "Workout", cat: "life" },
         { dur: "30m",  label: "Freshen up / Snack", cat: "break" },
-        { dur: "1.5h", label: `Flexible Buffer: Extra Study`, cat: "course" },
-        { dur: "1.5h", label: "Free Time / Dinner", cat: "break" },
+        { dur: "1.5h", label: `Flexible Buffer: Extra Study`, cat: "course", isBuffer: true },
+        { dur: "1.5h", label: "Free Time / Dinner", cat: "break", isBuffer: true },
         { dur: "15m",  label: "Daily Log: Tomorrow's plan", cat: "admin" },
       ];
     }
@@ -139,6 +147,33 @@ function buildDynamicSchedule(ignitionTimes = {}, customEvents = {}, generatedSc
     const startStr = ignitionTimes[dayIdx] || (isRest ? "10:00" : "08:00");
     let currentMins = timeToMins(startStr);
     
+    // Scientific Lateness Compression (Starts shrinking buffers if started after 9:00 AM)
+    const lateness = Math.max(0, currentMins - 540); // 540 = 09:00 AM
+    let compressibleTime = 0;
+    
+    for (let b of floatingBlocks) {
+      if (b.isBuffer) {
+        b.originalDur = parseDur(b.dur);
+        compressibleTime += b.originalDur;
+      }
+    }
+
+    if (lateness > 0 && compressibleTime > 0) {
+      const shrinkRatio = Math.max(0, 1 - (lateness / compressibleTime));
+      const newBlocks = [];
+      for (let b of floatingBlocks) {
+        if (b.isBuffer) {
+          const newDur = Math.round(b.originalDur * shrinkRatio);
+          if (newDur >= 15) {
+            newBlocks.push({ ...b, dur: minsToDur(newDur) });
+          }
+        } else {
+          newBlocks.push(b);
+        }
+      }
+      floatingBlocks = newBlocks;
+    }
+
     const dayEvents = (customEvents[dayIdx] || []).map((e, idx) => ({
       isCustom: true, label: `[FIXED] ${e.title}`, time: e.time, dur: e.dur, cat: 'life',
       startMins: timeToMins(e.time),
@@ -212,7 +247,13 @@ function ProgressRing({ radius, stroke, progress }) {
 
 // ─── APP ───────────────────────────────────────────────────────────────────────
 export default function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [selectedDay, setSelectedDay] = useState(() => parseInt(localStorage.getItem('timetable_day') || "0", 10));
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
   const [checked, setChecked] = useState({});
   const [ignitionTimes, setIgnitionTimes] = useState({});
   const [customEvents, setCustomEvents] = useState({});
@@ -312,7 +353,7 @@ export default function App() {
               return (
                 <button key={i} onClick={() => setSelectedDay(i)} style={{ width: "100%", padding: "12px 16px", marginBottom: 8, borderRadius: 12, textAlign: "left", background: active ? "var(--glass-bg-active)" : "transparent", border: `1px solid ${active ? "var(--glass-border)" : "transparent"}`, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? "#fff" : "var(--text-secondary)" }}>{d.shortLabel}</div>
+                    <div style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? "var(--text-primary-active)" : "var(--text-secondary)" }}>{d.shortLabel}</div>
                     {d.dsa && <div style={{ fontSize: 10, color: active ? "var(--accent-gold)" : "var(--text-tertiary)", marginTop: 2 }}>{d.dsa.topic}</div>}
                   </div>
                   {(doneCount === d.blocks.length && d.blocks.length > 0) && <Target size={14} color="var(--accent-gold)" />}
@@ -328,6 +369,12 @@ export default function App() {
             
             {/* Header Controls (Ignition + Add Event) */}
             <div style={{ position: "absolute", top: 24, right: 48, display: "flex", gap: 16, alignItems: "center" }}>
+              <button 
+                onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 18, background: "var(--glass-bg)", border: "1px solid var(--glass-border)", color: "var(--text-primary)", cursor: "pointer" }}
+              >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
               <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--glass-bg)", border: "1px solid var(--glass-border)", padding: "6px 16px", borderRadius: 99 }}>
                 <Clock size={14} color="var(--accent-gold)" />
                 <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600 }}>IGNITION:</span>
@@ -335,7 +382,7 @@ export default function App() {
                   type="time" 
                   value={ignitionTimes[validDay] || (today.isRest ? "10:00" : "08:00")}
                   onChange={handleIgnitionChange}
-                  style={{ background: "transparent", border: "none", color: "#fff", fontSize: 14, fontWeight: 700, outline: "none", cursor: "pointer", fontFamily: "var(--font-main)" }}
+                  style={{ background: "transparent", border: "none", color: "var(--text-primary)", fontSize: 14, fontWeight: 700, outline: "none", cursor: "pointer", fontFamily: "var(--font-main)", colorScheme: theme === 'dark' ? "dark" : "light" }}
                 />
               </div>
               <button 
@@ -361,7 +408,7 @@ export default function App() {
             </div>
 
             <div style={{ textAlign: "right", marginTop: 40 }}>
-              <div style={{ fontSize: 72, fontWeight: 900, lineHeight: 0.8, color: dayProg.pct === 100 ? "var(--accent-gold)" : "#fff" }}>{dayProg.pct}<span style={{ fontSize: 24, color: "var(--text-tertiary)" }}>%</span></div>
+              <div style={{ fontSize: 72, fontWeight: 900, lineHeight: 0.8, color: dayProg.pct === 100 ? "var(--accent-gold)" : "var(--text-primary)" }}>{dayProg.pct}<span style={{ fontSize: 24, color: "var(--text-tertiary)" }}>%</span></div>
               <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 12, letterSpacing: 1 }}>{dayProg.done} / {dayProg.total} COMPLETED</div>
             </div>
           </motion.div>
@@ -380,12 +427,12 @@ export default function App() {
                 return (
                   <motion.div layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }} key={block.id} style={{ display: "flex", gap: 32, marginBottom: 24, position: "relative", zIndex: 1, opacity: done ? 0.4 : 1 }}>
                     <div style={{ width: 120, textAlign: "right", paddingTop: 16 }}>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{format12Hour(block.time)}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>{format12Hour(block.time)}</div>
                       <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>{block.dur}</div>
                     </div>
                     <div style={{ width: 48, display: "flex", justifyContent: "center", paddingTop: 12 }}>
                       <button onClick={() => !isFixed && toggle(block.id)} style={{ width: 32, height: 32, borderRadius: 16, background: done ? config.color : "var(--bg-dark)", border: `2px solid ${done ? config.color : "var(--glass-border)"}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: isFixed ? "default" : "pointer", transition: "all 0.2s" }}>
-                        {done ? <CheckCircle2 size={18} color="#000" /> : <Circle size={10} color="var(--text-tertiary)" />}
+                        {done ? <CheckCircle2 size={18} color="var(--text-inverse)" /> : <Circle size={10} color="var(--text-tertiary)" />}
                       </button>
                     </div>
                     <div onClick={() => !isFixed && toggle(block.id)} style={{ flex: 1, padding: "20px 24px", borderRadius: 16, cursor: isFixed ? "default" : "pointer", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderLeft: `4px solid ${config.color}`, transition: "transform 0.2s, background 0.2s", transform: done ? "scale(0.98)" : "scale(1)" }} onMouseOver={e => !done && !isFixed && (e.currentTarget.style.background = "var(--glass-bg-hover)")} onMouseOut={e => e.currentTarget.style.background = "var(--glass-bg)"}>
@@ -393,7 +440,7 @@ export default function App() {
                         <Icon size={16} color={config.color} />
                         <span style={{ fontSize: 11, color: config.color, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600 }}>{isFixed ? "Fixed Event" : (isBreak ? "Rest & Recovery" : block.cat)}</span>
                       </div>
-                      <h3 style={{ fontSize: 18, fontWeight: 500, color: "#fff", textDecoration: done ? "line-through" : "none" }}>{block.label}</h3>
+                      <h3 style={{ fontSize: 18, fontWeight: 500, color: "var(--text-primary)", textDecoration: done ? "line-through" : "none" }}>{block.label}</h3>
                       <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 8 }}>Ends at {format12Hour(calculateEndTime(block.time, block.dur))}</div>
                     </div>
                   </motion.div>
@@ -406,17 +453,17 @@ export default function App() {
 
       {/* EVENT MODAL */}
       {showEventModal && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
-          <div className="glass-panel" style={{ width: 400, padding: 32, background: "#111" }}>
-            <h2 style={{ fontSize: 20, marginBottom: 24 }}>Add Custom Event</h2>
-            <input placeholder="Event Title (e.g. Going Out)" value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} style={{ width: "100%", padding: 12, marginBottom: 16, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 8 }} />
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "var(--modal-bg)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <div className="glass-panel" style={{ width: 400, padding: 32, background: "var(--bg-panel)" }}>
+            <h2 style={{ fontSize: 20, marginBottom: 24, color: "var(--text-primary)" }}>Add Custom Event</h2>
+            <input placeholder="Event Title (e.g. Going Out)" value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} style={{ width: "100%", padding: 12, marginBottom: 16, background: "var(--glass-bg-input)", border: "none", color: "var(--text-primary)", borderRadius: 8 }} />
             <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-              <input type="time" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} style={{ flex: 1, padding: 12, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 8 }} />
-              <input placeholder="Duration (e.g. 2h, 45m)" value={newEvent.dur} onChange={e => setNewEvent({...newEvent, dur: e.target.value})} style={{ flex: 1, padding: 12, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 8 }} />
+              <input type="time" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} style={{ flex: 1, padding: 12, background: "var(--glass-bg-input)", border: "none", color: "var(--text-primary)", borderRadius: 8, colorScheme: theme === 'dark' ? "dark" : "light" }} />
+              <input placeholder="Duration (e.g. 2h, 45m)" value={newEvent.dur} onChange={e => setNewEvent({...newEvent, dur: e.target.value})} style={{ flex: 1, padding: 12, background: "var(--glass-bg-input)", border: "none", color: "var(--text-primary)", borderRadius: 8 }} />
             </div>
             <div style={{ display: "flex", gap: 16 }}>
-              <button onClick={() => setShowEventModal(false)} style={{ flex: 1, padding: 12, background: "transparent", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: 8, cursor: "pointer" }}>Cancel</button>
-              <button onClick={handleAddEvent} style={{ flex: 1, padding: 12, background: "var(--accent-gold)", border: "none", color: "#000", fontWeight: 700, borderRadius: 8, cursor: "pointer" }}>Add Event</button>
+              <button onClick={() => setShowEventModal(false)} style={{ flex: 1, padding: 12, background: "transparent", border: "1px solid var(--glass-border)", color: "var(--text-primary)", borderRadius: 8, cursor: "pointer" }}>Cancel</button>
+              <button onClick={handleAddEvent} style={{ flex: 1, padding: 12, background: "var(--accent-gold)", border: "none", color: "var(--text-inverse)", fontWeight: 700, borderRadius: 8, cursor: "pointer" }}>Add Event</button>
             </div>
           </div>
         </div>

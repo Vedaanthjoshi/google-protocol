@@ -3,11 +3,13 @@
 :root {
   --bg-dark: #050505;
   --bg-darker: #000000;
+  --bg-panel: #111111;
   
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-bg-hover: rgba(255, 255, 255, 0.06);
   --glass-bg-active: rgba(255, 255, 255, 0.1);
+  --glass-bg-input: rgba(255, 255, 255, 0.1);
   
   --accent-gold: #F59E0B;
   --accent-gold-glow: rgba(245, 158, 11, 0.4);
@@ -16,10 +18,41 @@
   --accent-red: #EF4444;
 
   --text-primary: #ffffff;
+  --text-primary-active: #ffffff;
   --text-secondary: #a1a1aa;
   --text-tertiary: #52525b;
+  --text-inverse: #000000;
 
   --font-main: 'Outfit', sans-serif;
+  --glow-opacity: 0.05;
+  --modal-bg: rgba(0,0,0,0.8);
+}
+
+:root[data-theme="light"] {
+  --bg-dark: #f8fafc;
+  --bg-darker: #ffffff;
+  --bg-panel: #ffffff;
+  
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg-hover: rgba(255, 255, 255, 0.9);
+  --glass-bg-active: rgba(0, 0, 0, 0.05);
+  --glass-bg-input: rgba(0, 0, 0, 0.05);
+  
+  --accent-gold: #d97706;
+  --accent-gold-glow: rgba(217, 119, 6, 0.2);
+  --accent-blue: #2563eb;
+  --accent-green: #059669;
+  --accent-red: #dc2626;
+
+  --text-primary: #0f172a;
+  --text-primary-active: #000000;
+  --text-secondary: #64748b;
+  --text-tertiary: #94a3b8;
+  --text-inverse: #ffffff;
+  
+  --glow-opacity: 0.15;
+  --modal-bg: rgba(255,255,255,0.8);
 }
 
 * {
@@ -46,11 +79,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-border);
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--text-secondary);
 }
 
 /* Base Utility Classes */
@@ -63,7 +96,7 @@ body {
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -85,8 +118,8 @@ body {
   height: 100vh;
   z-index: -1;
   background: 
-    radial-gradient(circle at 15% 50%, rgba(245, 158, 11, 0.05), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.05), transparent 25%);
+    radial-gradient(circle at 15% 50%, rgba(245, 158, 11, var(--glow-opacity)), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(59, 130, 246, var(--glow-opacity)), transparent 25%);
 }
 
 button {
