@@ -367,9 +367,8 @@ export default function App() {
             
             {/* Streak & Grid */}
             <div style={{ marginTop: 24 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ marginBottom: 8 }}>
                 <span style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 700, letterSpacing: 1 }}>TELEMETRY</span>
-                <span style={{ fontSize: 12, color: "var(--accent-gold)", fontWeight: 700 }}>🔥 {validDay + 1} DAY STREAK</span>
               </div>
               <div className="mini-grid">
                 {schedule.map((d, i) => {
