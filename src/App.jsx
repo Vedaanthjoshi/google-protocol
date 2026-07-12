@@ -492,7 +492,7 @@ export default function App() {
                       </div>
                       <h3 style={{ fontSize: 18, fontWeight: 500, color: "var(--text-primary)", textDecoration: done ? "line-through" : "none" }}>{block.label}</h3>
                       <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 8 }}>Ends at {format12Hour(calculateEndTime(block.time, block.dur))}</div>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 );
               })}
