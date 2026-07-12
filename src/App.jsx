@@ -302,6 +302,24 @@ export default function App() {
     return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
   }, [checked, today]);
 
+  // Calculate Greeting
+  const currentHour = new Date().getHours();
+  const greeting = currentHour < 12 ? "Good Morning" : currentHour < 18 ? "Good Afternoon" : "Good Evening";
+
+  // Calculate Active Block
+  const activeBlock = useMemo(() => {
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    
+    return today.blocks.find(b => {
+      const startMins = timeToMins(b.time);
+      const durMins = parseDur(b.dur);
+      return currentMins >= startMins && currentMins < (startMins + durMins);
+    });
+  }, [today]);
+
+  const activeBlockIndex = useMemo(() => today.blocks.findIndex(b => activeBlock && b.id === activeBlock.id), [today, activeBlock]);
+
   const overall = useMemo(() => {
     const total = schedule.reduce((a, d) => a + d.blocks.length, 0);
     const done = Object.keys(checked).length;
@@ -329,6 +347,7 @@ export default function App() {
 
   return (
     <>
+      <div className="bg-noise" />
       <div className="bg-glow" />
       <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
         
@@ -343,6 +362,20 @@ export default function App() {
               <div>
                 <div style={{ fontSize: 12, color: "var(--text-secondary)", letterSpacing: 1 }}>MASTER PROTOCOL</div>
                 <div className="text-gradient-gold" style={{ fontSize: 18, fontWeight: 800 }}>Google Prep</div>
+              </div>
+            </div>
+            
+            {/* Streak & Grid */}
+            <div style={{ marginTop: 24 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 700, letterSpacing: 1 }}>TELEMETRY</span>
+                <span style={{ fontSize: 12, color: "var(--accent-gold)", fontWeight: 700 }}>🔥 {validDay + 1} DAY STREAK</span>
+              </div>
+              <div className="mini-grid">
+                {schedule.map((d, i) => {
+                   const isCompleted = d.blocks.length > 0 && d.blocks.every(b => checked[b.id] !== undefined);
+                   return <div key={i} className={`grid-cell ${isCompleted ? 'active' : ''}`} title={`Day ${i+1}`} />
+                })}
               </div>
             </div>
           </div>
@@ -395,12 +428,19 @@ export default function App() {
 
             <div>
               <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
-                {today.isAiGenerated && (
-                  <div style={{ background: "rgba(59, 130, 246, 0.2)", border: "1px solid var(--accent-blue)", color: "var(--accent-blue)", padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>AI SCHEDULE</div>
-                )}
+                <div style={{ fontSize: 14, color: "var(--text-secondary)", letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>{greeting}, Vedaanth</div>
+                <div style={{ width: 4, height: 4, borderRadius: 2, background: "var(--text-tertiary)" }} />
                 <div style={{ fontSize: 14, color: "var(--accent-gold)", letterSpacing: 2, textTransform: "uppercase", fontWeight: 600 }}>Day {today.dayNum} of 153 {today.isRest && "· Rest & Recovery"}</div>
               </div>
               <h1 className="text-gradient" style={{ fontSize: 48, fontWeight: 800, letterSpacing: -1, lineHeight: 1.1 }}>{today.dateLabel}</h1>
+              
+              {activeBlock && (
+                <div style={{ marginTop: 16, display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", padding: "6px 12px", borderRadius: 99 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 4, background: "var(--accent-gold)", boxShadow: "0 0 8px var(--accent-gold)" }} />
+                  <span style={{ fontSize: 12, color: "var(--accent-gold)", fontWeight: 700, letterSpacing: 1 }}>LIVE: {activeBlock.label}</span>
+                </div>
+              )}
+              
               <div style={{ marginTop: 24, maxWidth: 600 }}>
                 <p style={{ fontSize: 16, color: "var(--text-secondary)", fontStyle: "italic", lineHeight: 1.5 }}>"{quote.text}"</p>
                 <p style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 8, textTransform: "uppercase", letterSpacing: 1 }}>— {quote.author}</p>
@@ -415,7 +455,16 @@ export default function App() {
 
           {/* TIMELINE */}
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="glass-panel" style={{ flex: 1, padding: "24px 48px", overflowY: "auto", position: "relative" }}>
-            <div style={{ position: "absolute", left: 104, top: 48, bottom: 48, width: 2, background: "var(--glass-border)", zIndex: 0 }} />
+            <div style={{ position: "absolute", left: 104, top: 48, bottom: 48, width: 2, background: "var(--glass-border)", zIndex: 0 }}>
+              {activeBlockIndex >= 0 && (
+                <motion.div 
+                  initial={{ height: 0 }}
+                  animate={{ height: `${Math.min(100, (activeBlockIndex / Math.max(1, today.blocks.length - 1)) * 100)}%` }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  style={{ width: "100%", background: "var(--accent-gold)", boxShadow: "0 0 10px var(--accent-gold-glow)" }} 
+                />
+              )}
+            </div>
             <AnimatePresence>
               {today.blocks.map((block, idx) => {
                 const done = checked[block.id] !== undefined;
@@ -423,19 +472,20 @@ export default function App() {
                 const Icon = config.icon;
                 const isBreak = block.cat === "break";
                 const isFixed = block.isCustom;
+                const isActive = activeBlock && activeBlock.id === block.id;
 
                 return (
                   <motion.div layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }} key={block.id} style={{ display: "flex", gap: 32, marginBottom: 24, position: "relative", zIndex: 1, opacity: done ? 0.4 : 1 }}>
                     <div style={{ width: 120, textAlign: "right", paddingTop: 16 }}>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>{format12Hour(block.time)}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: isActive ? "var(--accent-gold)" : "var(--text-primary)" }}>{format12Hour(block.time)}</div>
                       <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>{block.dur}</div>
                     </div>
                     <div style={{ width: 48, display: "flex", justifyContent: "center", paddingTop: 12 }}>
-                      <button onClick={() => !isFixed && toggle(block.id)} style={{ width: 32, height: 32, borderRadius: 16, background: done ? config.color : "var(--bg-dark)", border: `2px solid ${done ? config.color : "var(--glass-border)"}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: isFixed ? "default" : "pointer", transition: "all 0.2s" }}>
-                        {done ? <CheckCircle2 size={18} color="var(--text-inverse)" /> : <Circle size={10} color="var(--text-tertiary)" />}
-                      </button>
+                      <motion.button whileTap={!isFixed ? { scale: 0.8 } : {}} onClick={() => !isFixed && toggle(block.id)} style={{ width: 32, height: 32, borderRadius: 16, background: done ? config.color : "var(--bg-dark)", border: `2px solid ${done ? config.color : (isActive ? "var(--accent-gold)" : "var(--glass-border)")}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: isFixed ? "default" : "pointer", transition: "all 0.2s" }} className={isActive && !done ? "active-pulse" : ""}>
+                        {done ? <CheckCircle2 size={18} color="var(--text-inverse)" /> : <Circle size={10} color={isActive ? "var(--accent-gold)" : "var(--text-tertiary)"} />}
+                      </motion.button>
                     </div>
-                    <div onClick={() => !isFixed && toggle(block.id)} style={{ flex: 1, padding: "20px 24px", borderRadius: 16, cursor: isFixed ? "default" : "pointer", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderLeft: `4px solid ${config.color}`, transition: "transform 0.2s, background 0.2s", transform: done ? "scale(0.98)" : "scale(1)" }} onMouseOver={e => !done && !isFixed && (e.currentTarget.style.background = "var(--glass-bg-hover)")} onMouseOut={e => e.currentTarget.style.background = "var(--glass-bg)"}>
+                    <motion.div whileTap={!isFixed ? { scale: 0.98 } : {}} onClick={() => !isFixed && toggle(block.id)} style={{ flex: 1, padding: "20px 24px", borderRadius: 16, cursor: isFixed ? "default" : "pointer", background: isActive ? "var(--glass-bg-hover)" : "var(--glass-bg)", border: "1px solid var(--glass-border)", borderLeft: `4px solid ${isActive && !done ? "var(--accent-gold)" : config.color}`, transition: "background 0.2s", transform: done ? "scale(0.98)" : "scale(1)" }} className={isActive && !done ? "active-pulse" : ""} onMouseOver={e => !done && !isFixed && (e.currentTarget.style.background = "var(--glass-bg-hover)")} onMouseOut={e => e.currentTarget.style.background = isActive ? "var(--glass-bg-hover)" : "var(--glass-bg)"}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                         <Icon size={16} color={config.color} />
                         <span style={{ fontSize: 11, color: config.color, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600 }}>{isFixed ? "Fixed Event" : (isBreak ? "Rest & Recovery" : block.cat)}</span>
