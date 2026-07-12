@@ -41,15 +41,15 @@ if (process.env.GEMINI_API_KEY) {
 function getMathematicalGoal(dayNum) {
   const month = Math.ceil(dayNum / 30);
   let dsaTopic = "Revision & Mocks"; let dsaQ = 2;
-  if (dayNum <= 10) dsaTopic = "Greedy (Medium/Hard)";
-  else if (dayNum <= 22) dsaTopic = "Binary Trees";
-  else if (dayNum <= 30) dsaTopic = "Binary Search Trees";
-  else if (dayNum <= 35) dsaTopic = "Heaps";
-  else if (dayNum <= 50) dsaTopic = "Graphs";
-  else if (dayNum <= 60) dsaTopic = "DP Introduction";
-  else if (dayNum <= 75) dsaTopic = "DP Mastery";
-  else if (dayNum <= 82) dsaTopic = "Tries";
-  else if (dayNum <= 90) dsaTopic = "Advanced Strings";
+  if (dayNum <= 1) dsaTopic = "Greedy (Medium/Hard)";
+  else if (dayNum <= 13) dsaTopic = "Binary Trees";
+  else if (dayNum <= 21) dsaTopic = "Binary Search Trees";
+  else if (dayNum <= 26) dsaTopic = "Heaps";
+  else if (dayNum <= 41) dsaTopic = "Graphs";
+  else if (dayNum <= 51) dsaTopic = "DP Introduction";
+  else if (dayNum <= 66) dsaTopic = "DP Mastery";
+  else if (dayNum <= 73) dsaTopic = "Tries";
+  else if (dayNum <= 81) dsaTopic = "Advanced Strings";
   else { dsaTopic = "Spaced Repetition & Mocks"; dsaQ = 0; }
 
   let aiTopic = "AI Maintenance";
