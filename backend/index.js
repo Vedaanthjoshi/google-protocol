@@ -41,15 +41,15 @@ if (process.env.GEMINI_API_KEY) {
 function getMathematicalGoal(dayNum) {
   const month = Math.ceil(dayNum / 30);
   let dsaTopic = "Revision & Mocks"; let dsaQ = 2;
-  if (dayNum <= 1) dsaTopic = "Greedy (Medium/Hard)";
-  else if (dayNum <= 13) dsaTopic = "Binary Trees";
-  else if (dayNum <= 21) dsaTopic = "Binary Search Trees";
-  else if (dayNum <= 26) dsaTopic = "Heaps";
-  else if (dayNum <= 41) dsaTopic = "Graphs";
-  else if (dayNum <= 51) dsaTopic = "DP Introduction";
-  else if (dayNum <= 66) dsaTopic = "DP Mastery";
-  else if (dayNum <= 73) dsaTopic = "Tries";
-  else if (dayNum <= 81) dsaTopic = "Advanced Strings";
+  if (dayNum <= 1) { dsaTopic = "Greedy (Medium/Hard)"; dsaQ = 0; }
+  else if (dayNum <= 13) { dsaTopic = "Binary Trees"; dsaQ = 3; }
+  else if (dayNum <= 21) { dsaTopic = "Binary Search Trees"; dsaQ = 2; }
+  else if (dayNum <= 26) { dsaTopic = "Heaps"; dsaQ = 3; }
+  else if (dayNum <= 41) { dsaTopic = "Graphs"; dsaQ = 4; }
+  else if (dayNum <= 51) { dsaTopic = "DP Introduction"; dsaQ = 2; }
+  else if (dayNum <= 66) { dsaTopic = "DP Mastery"; dsaQ = 3; }
+  else if (dayNum <= 73) { dsaTopic = "Tries"; dsaQ = 1; }
+  else if (dayNum <= 81) { dsaTopic = "Advanced Strings"; dsaQ = 2; }
   else { dsaTopic = "Spaced Repetition & Mocks"; dsaQ = 0; }
 
   let aiTopic = "AI Maintenance";
